@@ -282,7 +282,7 @@ function SaveManager:GetAutoloadConfig()
         return HttpService:JSONDecode(content)
     end)
     
-    if success and decoded.autoload then
+    if success and decoded and decoded.autoload then
         return decoded.autoload
     end
     
@@ -342,7 +342,9 @@ function SaveManager:BuildConfigSection(tab)
                 self.Library:Notify("Config Deleted", "Configuration deleted: " .. selectedConfig, 3)
             end
             configList = self:GetConfigList()
-            configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+            if configDropdown and configDropdown.SetOptions then
+                configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+            end
         else
             if self.Library then
                 self.Library:Notify("Delete Failed", "Failed to delete configuration", 3)
@@ -352,7 +354,9 @@ function SaveManager:BuildConfigSection(tab)
     
     section:NewButton("Refresh List", "Refresh config list", function()
         configList = self:GetConfigList()
-        configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+        if configDropdown and configDropdown.SetOptions then
+            configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+        end
         if self.Library then
             self.Library:Notify("Refreshed", "Config list updated", 2)
         end
@@ -363,15 +367,21 @@ function SaveManager:BuildConfigSection(tab)
     local configNameBox = section:NewTextbox("New Config Name", "MyConfig", function() end)
     
     section:NewButton("Create New Config", "Create config with custom name", function()
-        local newName = configNameBox:Get()
+        local newName = configNameBox and configNameBox:Get() or ""
         if newName and newName ~= "" then
             if self:Save(newName) then
                 if self.Library then
                     self.Library:Notify("Config Created", "New configuration created: " .. newName, 3)
                 end
                 configList = self:GetConfigList()
-                configDropdown:SetOptions(configList)
-                configDropdown:Set(newName)
+                if configDropdown then
+                    if configDropdown.SetOptions then
+                        configDropdown:SetOptions(configList)
+                    end
+                    if configDropdown.Set then
+                        configDropdown:Set(newName)
+                    end
+                end
                 selectedConfig = newName
             end
         else
