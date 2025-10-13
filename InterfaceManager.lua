@@ -1,4 +1,3 @@
-
 -- InterfaceManager for Kour6anHub
 -- Handles theme management and interface settings
 
@@ -40,7 +39,9 @@ function InterfaceManager:BuildInterfaceSection(tab)
     local currentTheme = (savedSettings and savedSettings.Theme) or "Dark"
     
     section:NewDropdown("Theme", themes, currentTheme, function(value)
-        self.Library:SetTheme(value)
+        if self.Library and self.Library.SetTheme then
+            self.Library:SetTheme(value)
+        end
         self:SaveInterfaceSettings("Theme", value)
     end)
     
@@ -52,7 +53,7 @@ function InterfaceManager:BuildInterfaceSection(tab)
     
     -- Save keybind when changed
     if toggleKeybind and toggleKeybind.Button then
-        toggleKeybind.Button:GetPropertyChangedSignal("Text"):Connect(function()
+        local conn = toggleKeybind.Button:GetPropertyChangedSignal("Text"):Connect(function()
             local key = toggleKeybind:GetKey()
             if key then
                 local keyName = tostring(key):gsub("Enum.KeyCode.", "")
@@ -115,7 +116,7 @@ function InterfaceManager:SaveInterfaceSettings(key, value)
                 return game:GetService("HttpService"):JSONDecode(content)
             end)
             
-            if success then
+            if success and decoded then
                 settings = decoded
             end
         end
@@ -162,7 +163,9 @@ function InterfaceManager:LoadInterfaceSettings()
     -- Apply saved theme
     if settings.Theme and self.Library then
         task.defer(function()
-            self.Library:SetTheme(settings.Theme)
+            if self.Library and self.Library.SetTheme then
+                self.Library:SetTheme(settings.Theme)
+            end
         end)
     end
     
@@ -183,7 +186,9 @@ function InterfaceManager:LoadInterfaceSettings()
         end)
         if success and keyEnum then
             task.defer(function()
-                self.Library:SetToggleKey(keyEnum)
+                if self.Library and self.Library.SetToggleKey then
+                    self.Library:SetToggleKey(keyEnum)
+                end
             end)
         end
     end
