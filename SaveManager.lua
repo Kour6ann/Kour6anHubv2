@@ -10,9 +10,9 @@ function SaveManager:New(configFolder)
     local self = setmetatable({}, SaveManager)
     
     self.ConfigFolder = configFolder or "Kour6anHub_Configs"
-    self.ConfigFile = self.ConfigFolder .. "/config.json"
     self.Elements = {}
     self.IgnoreList = {}
+    self.Library = nil
     self.Parser = {
         Toggle = {
             Save = function(element) 
@@ -46,7 +46,7 @@ function SaveManager:New(configFolder)
         },
         MultiDropdown = {
             Save = function(element) 
-                return element:Get() -- Returns array of selected items
+                return element:Get()
             end,
             Load = function(element, value) 
                 if type(value) == "table" then
@@ -96,21 +96,28 @@ function SaveManager:New(configFolder)
     return self
 end
 
+function SaveManager:SetLibrary(library)
+    self.Library = library
+    return self
+end
+
 function SaveManager:SetIgnoreIndexes(list)
     for _, name in ipairs(list) do
         self.IgnoreList[name] = true
     end
 end
 
+function SaveManager:IgnoreThemeSettings()
+    self.IgnoreList["Theme"] = true
+end
+
 function SaveManager:SetFolder(folder)
     self.ConfigFolder = folder
-    self.ConfigFile = folder .. "/config.json"
 end
 
 function SaveManager:RegisterElement(name, element, elementType)
     if self.IgnoreList[name] then return end
     
-    -- Validate elementType
     if not self.Parser[elementType] then
         warn("[SaveManager] Unknown element type:", elementType, "for", name)
         return
@@ -122,7 +129,8 @@ function SaveManager:RegisterElement(name, element, elementType)
     }
 end
 
-function SaveManager:Save()
+function SaveManager:Save(configName)
+    configName = configName or "config"
     local data = {}
     
     for name, info in pairs(self.Elements) do
@@ -153,17 +161,21 @@ function SaveManager:Save()
         makefolder(self.ConfigFolder)
     end
     
-    writefile(self.ConfigFile, encoded)
+    local filePath = self.ConfigFolder .. "/" .. configName .. ".json"
+    writefile(filePath, encoded)
     return true
 end
 
-function SaveManager:Load()
-    if not isfile(self.ConfigFile) then
+function SaveManager:Load(configName)
+    configName = configName or "config"
+    local filePath = self.ConfigFolder .. "/" .. configName .. ".json"
+    
+    if not isfile(filePath) then
         return false
     end
     
     local success, content = pcall(function()
-        return readfile(self.ConfigFile)
+        return readfile(filePath)
     end)
     
     if not success then
@@ -200,12 +212,191 @@ function SaveManager:Load()
     return true
 end
 
-function SaveManager:Delete()
-    if isfile(self.ConfigFile) then
-        delfile(self.ConfigFile)
+function SaveManager:Delete(configName)
+    configName = configName or "config"
+    local filePath = self.ConfigFolder .. "/" .. configName .. ".json"
+    
+    if isfile(filePath) then
+        delfile(filePath)
         return true
     end
     return false
+end
+
+function SaveManager:GetConfigList()
+    if not isfolder(self.ConfigFolder) then
+        return {}
+    end
+    
+    local configs = {}
+    local files = listfiles(self.ConfigFolder)
+    
+    for _, file in ipairs(files) do
+        if file:match("%.json$") then
+            local name = file:match("([^/\\]+)%.json$")
+            if name and name ~= "autoload" then
+                table.insert(configs, name)
+            end
+        end
+    end
+    
+    return configs
+end
+
+function SaveManager:SetAutoloadConfig(configName)
+    if not isfolder(self.ConfigFolder) then
+        makefolder(self.ConfigFolder)
+    end
+    
+    local autoloadPath = self.ConfigFolder .. "/autoload.json"
+    local data = {autoload = configName}
+    
+    local success, encoded = pcall(function()
+        return HttpService:JSONEncode(data)
+    end)
+    
+    if success then
+        writefile(autoloadPath, encoded)
+        return true
+    end
+    return false
+end
+
+function SaveManager:GetAutoloadConfig()
+    local autoloadPath = self.ConfigFolder .. "/autoload.json"
+    
+    if not isfile(autoloadPath) then
+        return nil
+    end
+    
+    local success, content = pcall(function()
+        return readfile(autoloadPath)
+    end)
+    
+    if not success then
+        return nil
+    end
+    
+    local decoded
+    success, decoded = pcall(function()
+        return HttpService:JSONDecode(content)
+    end)
+    
+    if success and decoded.autoload then
+        return decoded.autoload
+    end
+    
+    return nil
+end
+
+function SaveManager:LoadAutoloadConfig()
+    local autoload = self:GetAutoloadConfig()
+    if autoload then
+        return self:Load(autoload)
+    end
+    return false
+end
+
+function SaveManager:BuildConfigSection(tab)
+    local section = tab:NewSection("Configuration")
+    
+    local configList = self:GetConfigList()
+    local selectedConfig = configList[1] or "default"
+    
+    local configDropdown = section:NewDropdown(
+        "Select Config",
+        #configList > 0 and configList or {"No configs found"},
+        selectedConfig,
+        function(value)
+            selectedConfig = value
+        end
+    )
+    
+    section:NewButton("Save Config", "Save current settings", function()
+        if self:Save(selectedConfig) then
+            if self.Library then
+                self.Library:Notify("Config Saved", "Configuration saved as: " .. selectedConfig, 3)
+            end
+        else
+            if self.Library then
+                self.Library:Notify("Save Failed", "Failed to save configuration", 3)
+            end
+        end
+    end)
+    
+    section:NewButton("Load Config", "Load saved settings", function()
+        if self:Load(selectedConfig) then
+            if self.Library then
+                self.Library:Notify("Config Loaded", "Configuration loaded: " .. selectedConfig, 3)
+            end
+        else
+            if self.Library then
+                self.Library:Notify("Load Failed", "Failed to load configuration", 3)
+            end
+        end
+    end)
+    
+    section:NewButton("Delete Config", "Delete selected config", function()
+        if self:Delete(selectedConfig) then
+            if self.Library then
+                self.Library:Notify("Config Deleted", "Configuration deleted: " .. selectedConfig, 3)
+            end
+            configList = self:GetConfigList()
+            configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+        else
+            if self.Library then
+                self.Library:Notify("Delete Failed", "Failed to delete configuration", 3)
+            end
+        end
+    end)
+    
+    section:NewButton("Refresh List", "Refresh config list", function()
+        configList = self:GetConfigList()
+        configDropdown:SetOptions(#configList > 0 and configList or {"No configs found"})
+        if self.Library then
+            self.Library:Notify("Refreshed", "Config list updated", 2)
+        end
+    end)
+    
+    section:NewSeparator()
+    
+    local configNameBox = section:NewTextbox("New Config Name", "MyConfig", function() end)
+    
+    section:NewButton("Create New Config", "Create config with custom name", function()
+        local newName = configNameBox:Get()
+        if newName and newName ~= "" then
+            if self:Save(newName) then
+                if self.Library then
+                    self.Library:Notify("Config Created", "New configuration created: " .. newName, 3)
+                end
+                configList = self:GetConfigList()
+                configDropdown:SetOptions(configList)
+                configDropdown:Set(newName)
+                selectedConfig = newName
+            end
+        else
+            if self.Library then
+                self.Library:Notify("Invalid Name", "Please enter a valid config name", 3)
+            end
+        end
+    end)
+    
+    section:NewSeparator()
+    
+    section:NewButton("Set as Auto-load", "Automatically load this config on startup", function()
+        if self:SetAutoloadConfig(selectedConfig) then
+            if self.Library then
+                self.Library:Notify("Auto-load Set", selectedConfig .. " will load automatically", 3)
+            end
+        end
+    end)
+    
+    local currentAutoload = self:GetAutoloadConfig()
+    if currentAutoload then
+        section:NewLabel("Current Auto-load: " .. currentAutoload)
+    else
+        section:NewLabel("No Auto-load config set")
+    end
 end
 
 function SaveManager:AutoSave(interval)
