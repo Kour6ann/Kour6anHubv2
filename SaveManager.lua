@@ -19,7 +19,9 @@ function SaveManager:New(configFolder)
                 return element:GetState() 
             end,
             Load = function(element, value) 
-                element:SetState(value) 
+                if type(value) == "boolean" then
+                    element:SetState(value)
+                end
             end
         },
         Slider = {
@@ -27,7 +29,9 @@ function SaveManager:New(configFolder)
                 return element:Get() 
             end,
             Load = function(element, value) 
-                element:Set(value) 
+                if type(value) == "number" then
+                    element:Set(value)
+                end
             end
         },
         Dropdown = {
@@ -35,7 +39,19 @@ function SaveManager:New(configFolder)
                 return element:Get() 
             end,
             Load = function(element, value) 
-                element:Set(value) 
+                if type(value) == "string" then
+                    element:Set(value)
+                end
+            end
+        },
+        MultiDropdown = {
+            Save = function(element) 
+                return element:Get() -- Returns array of selected items
+            end,
+            Load = function(element, value) 
+                if type(value) == "table" then
+                    element:Set(value)
+                end
             end
         },
         ColorPicker = {
@@ -44,7 +60,9 @@ function SaveManager:New(configFolder)
                 return {R = color.R, G = color.G, B = color.B}
             end,
             Load = function(element, value)
-                element:Set(Color3.new(value.R, value.G, value.B))
+                if type(value) == "table" and value.R and value.G and value.B then
+                    element:Set(Color3.new(value.R, value.G, value.B))
+                end
             end
         },
         Keybind = {
@@ -53,7 +71,7 @@ function SaveManager:New(configFolder)
                 return key and tostring(key) or "None"
             end,
             Load = function(element, value)
-                if value and value ~= "None" then
+                if value and value ~= "None" and type(value) == "string" then
                     local success, keycode = pcall(function()
                         return Enum.KeyCode[value:gsub("Enum.KeyCode.", "")]
                     end)
@@ -68,7 +86,9 @@ function SaveManager:New(configFolder)
                 return element:Get()
             end,
             Load = function(element, value)
-                element:Set(value)
+                if type(value) == "string" then
+                    element:Set(value)
+                end
             end
         }
     }
@@ -89,6 +109,12 @@ end
 
 function SaveManager:RegisterElement(name, element, elementType)
     if self.IgnoreList[name] then return end
+    
+    -- Validate elementType
+    if not self.Parser[elementType] then
+        warn("[SaveManager] Unknown element type:", elementType, "for", name)
+        return
+    end
     
     self.Elements[name] = {
         Element = element,
