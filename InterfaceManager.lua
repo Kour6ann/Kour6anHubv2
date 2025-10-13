@@ -1,3 +1,4 @@
+
 -- InterfaceManager for Kour6anHub
 -- Handles theme management and interface settings
 
@@ -35,7 +36,8 @@ function InterfaceManager:BuildInterfaceSection(tab)
     
     -- Theme selector
     local themes = self.Library:GetThemeList()
-    local currentTheme = "Modern" -- Default theme
+    local savedSettings = self:LoadInterfaceSettings()
+    local currentTheme = (savedSettings and savedSettings.Theme) or "Dark"
     
     section:NewDropdown("Theme", themes, currentTheme, function(value)
         self.Library:SetTheme(value)
@@ -43,26 +45,59 @@ function InterfaceManager:BuildInterfaceSection(tab)
     end)
     
     -- UI Toggle keybind
-    section:NewKeybind("Toggle UI Keybind", Enum.KeyCode.RightControl, function()
-        -- Keybind is handled by the library itself
+    local defaultKey = (savedSettings and savedSettings.ToggleKey) or "RightControl"
+    local toggleKeybind = section:NewKeybind("Toggle UI Keybind", Enum.KeyCode[defaultKey], function()
+        -- Keybind functionality handled internally
     end)
     
+    -- Save keybind when changed
+    if toggleKeybind and toggleKeybind.Button then
+        toggleKeybind.Button:GetPropertyChangedSignal("Text"):Connect(function()
+            local key = toggleKeybind:GetKey()
+            if key then
+                local keyName = tostring(key):gsub("Enum.KeyCode.", "")
+                self:SaveInterfaceSettings("ToggleKey", keyName)
+                if self.Library and self.Library.SetToggleKey then
+                    self.Library:SetToggleKey(key)
+                end
+            end
+        end)
+    end
+    
     -- Reduced motion toggle
-    section:NewToggle("Reduced Motion", "Disable animations for better performance", false, function(value)
-        -- This would need to be implemented in your main library
+    local reducedMotion = (savedSettings and savedSettings.ReducedMotion) or false
+    section:NewToggle("Reduced Motion", "Disable animations for better performance", reducedMotion, function(value)
+        _G.ReducedMotion = value
         self:SaveInterfaceSettings("ReducedMotion", value)
     end)
     
     -- Notification duration slider
-    section:NewSlider("Notification Duration", 1, 10, 4, function(value)
-        if self.Library._notifConfig then
+    local notifDuration = (savedSettings and savedSettings.NotificationDuration) or 4
+    section:NewSlider("Notification Duration", 1, 10, notifDuration, function(value)
+        if self.Library and self.Library._notifConfig then
             self.Library._notifConfig.defaultDuration = value
             self:SaveInterfaceSettings("NotificationDuration", value)
         end
     end)
     
-    -- Load saved settings
-    self:LoadInterfaceSettings()
+    section:NewSeparator()
+    
+    -- Window controls
+    section:NewButton("Minimize Window", "Minimize the UI window", function()
+        if self.Library and self.Library.Minimize then
+            self.Library:Minimize()
+        end
+    end)
+    
+    section:NewButton("Center Window", "Reset window position to center", function()
+        if self.Library and self.Library.Main then
+            self.Library.Main.Position = UDim2.new(0.5, -310, 0.5, -210)
+            self.Library._storedPosition = self.Library.Main.Position
+            if self.Library.Notify then
+                self.Library:Notify("Window Reset", "Window position reset to center", 2)
+            end
+        end
+    end)
 end
 
 function InterfaceManager:SaveInterfaceSettings(key, value)
@@ -93,6 +128,9 @@ function InterfaceManager:SaveInterfaceSettings(key, value)
     end)
     
     if success then
+        if not isfolder(self.Folder) then
+            makefolder(self.Folder)
+        end
         writefile(settingsPath, encoded)
     end
 end
@@ -101,7 +139,7 @@ function InterfaceManager:LoadInterfaceSettings()
     local settingsPath = self.Folder .. "/interface_settings.json"
     
     if not isfile(settingsPath) then
-        return
+        return nil
     end
     
     local success, content = pcall(function()
@@ -109,7 +147,7 @@ function InterfaceManager:LoadInterfaceSettings()
     end)
     
     if not success then
-        return
+        return nil
     end
     
     local settings
@@ -118,17 +156,36 @@ function InterfaceManager:LoadInterfaceSettings()
     end)
     
     if not success or type(settings) ~= "table" then
-        return
+        return nil
     end
     
     -- Apply saved theme
     if settings.Theme and self.Library then
-        self.Library:SetTheme(settings.Theme)
+        task.defer(function()
+            self.Library:SetTheme(settings.Theme)
+        end)
     end
     
     -- Apply notification duration
     if settings.NotificationDuration and self.Library and self.Library._notifConfig then
         self.Library._notifConfig.defaultDuration = settings.NotificationDuration
+    end
+    
+    -- Apply reduced motion
+    if settings.ReducedMotion ~= nil then
+        _G.ReducedMotion = settings.ReducedMotion
+    end
+    
+    -- Apply toggle key
+    if settings.ToggleKey and self.Library and self.Library.SetToggleKey then
+        local success, keyEnum = pcall(function()
+            return Enum.KeyCode[settings.ToggleKey]
+        end)
+        if success and keyEnum then
+            task.defer(function()
+                self.Library:SetToggleKey(keyEnum)
+            end)
+        end
     end
     
     return settings
