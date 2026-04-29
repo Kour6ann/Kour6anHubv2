@@ -44,15 +44,13 @@ function Elements.Inject(SectionObj, Section, env)
                 debouncedHover(Btn,
                     function()
                         tween(Btn, {
-                            BackgroundColor3 = theme.ButtonHover, 
-                            Size = UDim2.new(1, -4, 0, 38)
+                            BackgroundColor3 = theme.ButtonHover
                         }, {duration = 0.1})
                         tween(BtnStroke, {Transparency = 0.5}, {duration = 0.1})
                     end,
                     function()
                         tween(Btn, {
-                            BackgroundColor3 = theme.ButtonBackground, 
-                            Size = UDim2.new(1, 0, 0, 36)
+                            BackgroundColor3 = theme.ButtonBackground
                         }, {duration = 0.1})
                         tween(BtnStroke, {Transparency = 0.7}, {duration = 0.1})
                     end
@@ -60,8 +58,7 @@ function Elements.Inject(SectionObj, Section, env)
 
                 Btn.MouseButton1Click:Connect(function()
                     local t1 = tween(Btn, {
-                        BackgroundColor3 = theme.Accent, 
-                        Size = UDim2.new(1, -6, 0, 34)
+                        BackgroundColor3 = theme.Accent
                     }, {duration = 0.08})
                     tween(BtnStroke, {
                         Color = theme.Accent, 
@@ -74,8 +71,7 @@ function Elements.Inject(SectionObj, Section, env)
                         c = t1.Completed:Connect(function()
                             pcall(function() c:Disconnect() end)
                             tween(Btn, {
-                                BackgroundColor3 = theme.ButtonBackground, 
-                                Size = UDim2.new(1, 0, 0, 36)
+                                BackgroundColor3 = theme.ButtonBackground
                             }, {duration = 0.15})
                             tween(BtnStroke, {
                                 Color = theme.ButtonBorder, 
@@ -86,8 +82,7 @@ function Elements.Inject(SectionObj, Section, env)
                     else
                         task.delay(0.09, function() 
                             tween(Btn, {
-                                BackgroundColor3 = theme.ButtonBackground, 
-                                Size = UDim2.new(1, 0, 0, 36)
+                                BackgroundColor3 = theme.ButtonBackground
                             }, {duration = 0.15})
                             tween(BtnStroke, {
                                 Color = theme.ButtonBorder, 
@@ -138,36 +133,22 @@ function Elements.Inject(SectionObj, Section, env)
                     function()
                         if not state then
                             tween(ToggleBtn, {
-                                BackgroundColor3 = theme.ButtonHover, 
-                                Size = UDim2.new(1, -4, 0, 38)
+                                BackgroundColor3 = theme.ButtonHover
                             }, {duration = 0.1})
                             tween(ToggleStroke, {Transparency = 0.5}, {duration = 0.1})
-                        else
-                            tween(ToggleBtn, {Size = UDim2.new(1, -4, 0, 38)}, {duration = 0.1})
                         end
                     end,
                     function()
-                        tween(ToggleBtn, {Size = UDim2.new(1, 0, 0, 36)}, {duration = 0.1})
                         if not state then
+                            tween(ToggleBtn, {
+                                BackgroundColor3 = theme.ButtonBackground
+                            }, {duration = 0.1})
                             tween(ToggleStroke, {Transparency = 0.7}, {duration = 0.1})
                         end
                     end
                 )
 
                 ToggleBtn.MouseButton1Click:Connect(function()
-                    local t1 = tween(ToggleBtn, {Size = UDim2.new(1, -6, 0, 34)}, {duration = 0.08})
-                    if t1 then
-                        local c
-                        c = t1.Completed:Connect(function()
-                            pcall(function() c:Disconnect() end)
-                            tween(ToggleBtn, {Size = UDim2.new(1, 0, 0, 36)}, {duration = 0.15})
-                        end)
-                    else
-                        task.delay(0.09, function() 
-                            tween(ToggleBtn, {Size = UDim2.new(1, 0, 0, 36)}, {duration = 0.15}) 
-                        end)
-                    end
-                    
                     state = not state
                     ToggleBtn.Text = text .. (state and " [ON]" or " [OFF]")
                     
@@ -625,18 +606,26 @@ function Elements.Inject(SectionObj, Section, env)
                 local wrap = Instance.new("Frame")
                 wrap.Size = UDim2.new(1, 0, 0, 36)
                 wrap.BackgroundTransparency = 1
+                wrap.AutomaticSize = Enum.AutomaticSize.Y
+                wrap.ClipsDescendants = false
                 wrap.Parent = Section
+
+                local wrapList = Instance.new("UIListLayout")
+                wrapList.SortOrder = Enum.SortOrder.LayoutOrder
+                wrapList.Padding = UDim.new(0, 0)
+                wrapList.Parent = wrap
 
                 local btn = Instance.new("TextButton")
                 local displayText = current or "Select..."
                 btn.Text = (name and name .. ": " or "") .. displayText
-                btn.Size = UDim2.new(1, 0, 1, 0)
+                btn.Size = UDim2.new(1, 0, 0, 36)
                 btn.BackgroundColor3 = theme.ButtonBackground
                 btn.TextColor3 = theme.Text
                 btn.Font = Enum.Font.Gotham
                 btn.TextSize = 13
                 btn.AutoButtonColor = false
                 btn.TextXAlignment = Enum.TextXAlignment.Left
+                btn.LayoutOrder = 1
                 btn.Parent = wrap
 
                 local btnCorner = Instance.new("UICorner")
@@ -707,7 +696,6 @@ function Elements.Inject(SectionObj, Section, env)
                         end
                     end
                     open = false
-                    wrap.Size = UDim2.new(1, 0, 0, 36)
                     
                     if Window._currentOpenDropdown == closeOptions then
                         Window._currentOpenDropdown = nil
@@ -723,11 +711,11 @@ function Elements.Inject(SectionObj, Section, env)
                     optionsFrame.Name = "_dropdownOptions"
                     optionsFrame.BackgroundColor3 = theme.SectionBackground
                     optionsFrame.BorderSizePixel = 0
-                    optionsFrame.Position = UDim2.new(0, 0, 0, 38)
                     optionsFrame.Size = UDim2.new(1, 0, 0, 0)
                     optionsFrame.Visible = false
                     optionsFrame.ClipsDescendants = true
                     optionsFrame.ZIndex = 100
+                    optionsFrame.LayoutOrder = 2
                     optionsFrame.Parent = wrap
 
                     local corner = Instance.new("UICorner")
@@ -881,8 +869,6 @@ function Elements.Inject(SectionObj, Section, env)
                             end
                         end)
                     end
-
-                    wrap.Size = UDim2.new(1, 0, 0, 36 + frameHeight + 8)
                     Window._currentOpenDropdown = closeOptions
                 end
 
@@ -1019,7 +1005,14 @@ function Elements.Inject(SectionObj, Section, env)
                 local wrap = Instance.new("Frame")
                 wrap.Size = UDim2.new(1, 0, 0, 36)
                 wrap.BackgroundTransparency = 1
+                wrap.AutomaticSize = Enum.AutomaticSize.Y
+                wrap.ClipsDescendants = false
                 wrap.Parent = Section
+
+                local wrapList = Instance.new("UIListLayout")
+                wrapList.SortOrder = Enum.SortOrder.LayoutOrder
+                wrapList.Padding = UDim.new(0, 0)
+                wrapList.Parent = wrap
 
                 local function getDisplayText()
                     local selectedList = {}
@@ -1043,13 +1036,14 @@ function Elements.Inject(SectionObj, Section, env)
 
                 local btn = Instance.new("TextButton")
                 btn.Text = (name and name .. ": " or "") .. getDisplayText()
-                btn.Size = UDim2.new(1, 0, 1, 0)
+                btn.Size = UDim2.new(1, 0, 0, 36)
                 btn.BackgroundColor3 = theme.ButtonBackground
                 btn.TextColor3 = theme.Text
                 btn.Font = Enum.Font.Gotham
                 btn.TextSize = 13
                 btn.AutoButtonColor = false
                 btn.TextXAlignment = Enum.TextXAlignment.Left
+                btn.LayoutOrder = 1
                 btn.Parent = wrap
 
                 local btnCorner = Instance.new("UICorner")
@@ -1120,7 +1114,6 @@ function Elements.Inject(SectionObj, Section, env)
                         end
                     end
                     open = false
-                    wrap.Size = UDim2.new(1, 0, 0, 36)
                     
                     if Window._currentOpenDropdown == closeOptions then
                         Window._currentOpenDropdown = nil
@@ -1136,11 +1129,11 @@ function Elements.Inject(SectionObj, Section, env)
                     optionsFrame.Name = "_dropdownOptions"
                     optionsFrame.BackgroundColor3 = theme.SectionBackground
                     optionsFrame.BorderSizePixel = 0
-                    optionsFrame.Position = UDim2.new(0, 0, 0, 38)
                     optionsFrame.Size = UDim2.new(1, 0, 0, 0)
                     optionsFrame.Visible = false
                     optionsFrame.ClipsDescendants = true
                     optionsFrame.ZIndex = 100
+                    optionsFrame.LayoutOrder = 2
                     optionsFrame.Parent = wrap
 
                     local corner = Instance.new("UICorner")
@@ -1329,8 +1322,6 @@ function Elements.Inject(SectionObj, Section, env)
                             end
                         end)
                     end
-
-                    wrap.Size = UDim2.new(1, 0, 0, 36 + frameHeight + 8)
                     Window._currentOpenDropdown = closeOptions
                 end
 

@@ -385,6 +385,10 @@ function Kour6anHub.CreateLib(title, themeName)
     Main.ClipsDescendants = false
     Main.Parent = ScreenGui
 
+    local mainScale = Instance.new("UIScale")
+    mainScale.Scale = 1
+    mainScale.Parent = Main
+
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 10)
     MainCorner.Parent = Main
@@ -469,6 +473,37 @@ function Kour6anHub.CreateLib(title, themeName)
     CloseBtnStroke.Parent = CloseBtn
 
     local globalConnTracker = makeConnectionTracker()
+
+    local baseSize = Vector2.new(Main.Size.X.Offset, Main.Size.Y.Offset)
+
+    local function updateMainScale()
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+        local viewport = camera.ViewportSize
+        if not viewport then return end
+
+        local scaleX = viewport.X / baseSize.X
+        local scaleY = viewport.Y / baseSize.Y
+        local targetScale = math.clamp(math.min(scaleX, scaleY), 0.65, 1)
+        mainScale.Scale = targetScale
+    end
+
+    local viewportConn
+    local function bindCamera()
+        if viewportConn then
+            pcall(function() viewportConn:Disconnect() end)
+            viewportConn = nil
+        end
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+        updateMainScale()
+        viewportConn = camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateMainScale)
+        globalConnTracker:add(viewportConn)
+    end
+
+    bindCamera()
+    local cameraConn = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
+    globalConnTracker:add(cameraConn)
 
     -- Make draggable
     local dragTracker = makeDraggable(Main, Topbar)
@@ -931,7 +966,7 @@ function Kour6anHub.CreateLib(title, themeName)
         self._uiMinimized = true
 
         local header = (self.Topbar or Topbar)
-        local headerHeight = (header and header.AbsoluteSize and header.AbsoluteSize.Y) or 45
+        local headerHeight = (header and header.Size and header.Size.Y and header.Size.Y.Offset) or 45
 
         if self.Main then
             pcall(function()
@@ -1069,8 +1104,7 @@ function Kour6anHub.CreateLib(title, themeName)
             function()
                 if not TabButton:GetAttribute("active") then
                     tween(TabButton, {
-                        BackgroundColor3 = theme.ButtonHover, 
-                        Size = UDim2.new(1, -16, 0, 44)
+                        BackgroundColor3 = theme.ButtonHover
                     }, {duration = 0.12})
                     tween(TabButtonStroke, {Transparency = 0.5}, {duration = 0.12})
                 end
@@ -1078,13 +1112,11 @@ function Kour6anHub.CreateLib(title, themeName)
             function()
                 if TabButton:GetAttribute("active") then
                     tween(TabButton, {
-                        BackgroundColor3 = theme.Accent, 
-                        Size = UDim2.new(1, -20, 0, 42)
+                        BackgroundColor3 = theme.Accent
                     }, {duration = 0.12})
                 else
                     tween(TabButton, {
-                        BackgroundColor3 = theme.ButtonBackground, 
-                        Size = UDim2.new(1, -20, 0, 42)
+                        BackgroundColor3 = theme.ButtonBackground
                     }, {duration = 0.12})
                     tween(TabButtonStroke, {Transparency = 0.7}, {duration = 0.12})
                 end
@@ -1328,15 +1360,13 @@ function Kour6anHub.CreateLib(title, themeName)
     debouncedHover(MinimizeBtn,
         function()
             tween(MinimizeBtn, {
-                BackgroundColor3 = theme.ButtonHover,
-                Size = UDim2.new(0, 37, 0, 37)
+                BackgroundColor3 = theme.ButtonHover
             }, {duration = 0.1})
             tween(MinimizeBtnStroke, {Transparency = 0.5}, {duration = 0.1})
         end,
         function()
             tween(MinimizeBtn, {
-                BackgroundColor3 = theme.ButtonBackground,
-                Size = UDim2.new(0, 35, 0, 35)
+                BackgroundColor3 = theme.ButtonBackground
             }, {duration = 0.1})
             tween(MinimizeBtnStroke, {Transparency = 0.7}, {duration = 0.1})
         end
@@ -1345,14 +1375,12 @@ function Kour6anHub.CreateLib(title, themeName)
     debouncedHover(CloseBtn,
         function()
             tween(CloseBtn, {
-                BackgroundColor3 = Color3.fromRGB(240, 73, 89),
-                Size = UDim2.new(0, 37, 0, 37)
+                BackgroundColor3 = Color3.fromRGB(240, 73, 89)
             }, {duration = 0.1})
         end,
         function()
             tween(CloseBtn, {
-                BackgroundColor3 = Color3.fromRGB(220, 53, 69),
-                Size = UDim2.new(0, 35, 0, 35)
+                BackgroundColor3 = Color3.fromRGB(220, 53, 69)
             }, {duration = 0.1})
         end
     )
