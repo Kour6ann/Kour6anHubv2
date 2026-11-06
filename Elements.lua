@@ -15,6 +15,19 @@ function Elements.Inject(SectionObj, Section, env)
     local GRADIENT_IMAGE = env.GRADIENT_IMAGE
 
             function SectionObj:NewButton(text, desc, callback)
+                if type(desc) == "function" then
+                    if type(callback) == "string" then
+                        local realDesc = callback
+                        callback = desc
+                        desc = realDesc
+                    else
+                        callback = desc
+                        desc = nil
+                    end
+                elseif desc ~= nil and type(desc) ~= "string" and callback == nil then
+                    callback = desc
+                    desc = nil
+                end
                 if type(text) ~= "string" then text = tostring(text or "Button") end
                 if callback ~= nil and type(callback) ~= "function" then 
                     warn("NewButton: callback is not a function") 
@@ -98,6 +111,47 @@ function Elements.Inject(SectionObj, Section, env)
             end
 
             function SectionObj:NewToggle(text, desc, default, callback)
+                if type(desc) == "function" then
+                    if type(default) == "string" and callback == nil then
+                        local realDesc = default
+                        callback = desc
+                        desc = realDesc
+                        default = false
+                    else
+                        callback = desc
+                        desc = nil
+                        if type(default) ~= "boolean" then
+                            default = false
+                        end
+                    end
+                elseif type(desc) == "boolean" then
+                    local initialDefault = desc
+                    desc = nil
+                    if callback == nil then
+                        callback = default
+                    end
+                    default = initialDefault
+                elseif desc ~= nil and type(desc) ~= "string" and callback == nil then
+                    callback = desc
+                    desc = nil
+                    if type(default) ~= "boolean" then
+                        default = false
+                    end
+                else
+                    if type(default) == "function" then
+                        if type(callback) == "boolean" then
+                            local realCallback = default
+                            default = callback
+                            callback = realCallback
+                        elseif callback == nil then
+                            callback = default
+                            default = false
+                        end
+                    elseif callback == nil and default ~= nil and type(default) ~= "boolean" then
+                        callback = default
+                        default = false
+                    end
+                end
                 if type(text) ~= "string" then text = tostring(text or "Toggle") end
                 if callback ~= nil and type(callback) ~= "function" then 
                     warn("NewToggle: callback is not a function") 
