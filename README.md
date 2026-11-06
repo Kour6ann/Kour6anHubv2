@@ -43,7 +43,7 @@ end)
 ## 📖 Full Starter Example (With Config Saving & Themes)
 ```lua
 -- 1. Load the Hub (Only 1 single line!)
-local Kour6anHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/init.lua"))()
+local Kour6anHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kour6ann/Kour6anHubv2/refs/heads/main/init.lua"))()
 -- 2. Create the window
 local Window = Kour6anHub.CreateLib("My Script Hub", "Midnight")
 -- 3. Create tabs
