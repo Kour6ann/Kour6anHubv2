@@ -6,7 +6,7 @@
     (including Elements, InterfaceManager, and SaveManager) with just ONE line!
 --]]
 
-local GITHUB_URL = "https://github.com/Kour6ann/Kour6anHubv2/tree/main"
+local GITHUB_URL = "https://raw.githubusercontent.com/Kour6ann/Kour6anHubv2/main/"
 
 local function loadFile(fileName)
     -- 1. Try loading from GitHub
